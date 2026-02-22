@@ -24,10 +24,10 @@ CHECK_INTERVAL = 60
 
 def send_notification(title, message):
     subprocess.run(['notify-send', title, message])
-    subprocess.run(['paplay', '/usr/share/sounds/ubuntu/notifications/Flat2.ogg'])
+    subprocess.run(['paplay', '/usr/share/sounds/LinuxMint/stereo/dialog-information.ogg'])
 
 def play_sound():
-    subprocess.run(['paplay', '/usr/share/sounds/ubuntu/notifications/Flat2.ogg'])
+    subprocess.run(['paplay', '/usr/share/sounds/LinuxMint/stereo/dialog-information.ogg'])
 
 import sys
 
