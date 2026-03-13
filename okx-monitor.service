@@ -1,0 +1,15 @@
+[Unit]
+Description=OKX Trading Monitor
+After=network.target
+
+[Service]
+Type=simple
+User=dcy
+WorkingDirectory=/home/dcy/OkxTrading
+EnvironmentFile=/home/dcy/OkxTrading/.env
+ExecStart=/usr/bin/python3 /home/dcy/OkxTrading/main.py
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
