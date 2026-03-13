@@ -51,4 +51,19 @@ def get_ticker(symbol='ETH/USDT'):
         init_okx()
     return okx.fetch_ticker(symbol)
 
+def get_balance():
+    if okx is None:
+        init_okx()
+    try:
+        balance = okx.fetch_balance()
+        return {
+            'total_usd': balance.get('total', {}).get('USDT', 0),
+            'ETH': balance.get('total', {}).get('ETH', 0),
+            'BTC': balance.get('total', {}).get('BTC', 0),
+            'USDT': balance.get('total', {}).get('USDT', 0),
+            'free': balance.get('free', {}),
+        }
+    except Exception as e:
+        return None
+
 init_okx()

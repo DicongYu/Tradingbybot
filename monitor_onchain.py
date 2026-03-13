@@ -11,6 +11,11 @@ NOTIFY_INTERVAL = 5
 
 ETHERSCAN_API_KEY = os.environ.get('ETHERSCAN_API_KEY', '')
 
+PROXIES = {
+    'http': 'http://127.0.0.1:20171',
+    'https': 'http://127.0.0.1:20171'
+}
+
 ACTIVE_ADDRESS_THRESHOLD = 0.20
 GAS_THRESHOLD = 0.30
 LARGE_TX_THRESHOLD = 100
@@ -55,17 +60,19 @@ def get_btc_network_data():
     return None
 
 def get_eth_gas_price():
+    if not ETHERSCAN_API_KEY:
+        return None
     try:
-        url = f"https://api.etherscan.io/api?module=gastracker&action=gasoracle&apikey={ETHERSCAN_API_KEY}"
-        resp = requests.get(url, timeout=10)
+        url = f"https://api.etherscan.io/v2/api?chainid=1&module=gastracker&action=gasoracle&apikey={ETHERSCAN_API_KEY}"
+        resp = requests.get(url, timeout=10, proxies=PROXIES)
         data = resp.json()
-        if data.get('status') == '1':
+        if data.get('status') == '1' and data.get('result'):
             result = data['result']
             return {
-                'safe': float(result['SafeGasPrice']),
-                'propose': float(result['ProposeGasPrice']),
-                'fast': float(result['FastGasPrice']),
-                'avg': float(result.get('ProposeGasPrice', result['SafeGasPrice']))
+                'safe': float(result.get('SafeGasPrice', 0)),
+                'propose': float(result.get('ProposeGasPrice', 0)),
+                'fast': float(result.get('FastGasPrice', 0)),
+                'avg': float(result.get('ProposeGasPrice', result.get('SafeGasPrice', 0)))
             }
     except Exception as e:
         log(f"Gas error: {e}")
