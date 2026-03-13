@@ -1,13 +1,16 @@
 import time
 import subprocess
 import sys
+import logging
+from logging.handlers import TimedRotatingFileHandler
 from datetime import datetime
 
 sys.path.insert(0, '/home/dcy/OkxTrading')
 import monitor_okx
 import monitor_onchain
 
-LOG_FILE = '/home/dcy/OkxTrading/monitor.log'
+LOG_DIR = '/home/dcy/OkxTrading'
+LOG_FILE = f'{LOG_DIR}/monitor.log'
 
 CHECK_INTERVAL = 60
 SYMBOL = 'ETH/USDT'
@@ -119,12 +122,31 @@ class AlertManager:
             parts.append(f"USDT: {data['USDT']:.2f}")
         return " | ".join(parts) if parts else "获取失败"
 
+def setup_logging():
+    logger = logging.getLogger('monitor')
+    logger.setLevel(logging.INFO)
+    
+    handler = TimedRotatingFileHandler(
+        LOG_FILE,
+        when='midnight',
+        interval=1,
+        backupCount=30,
+        encoding='utf-8'
+    )
+    handler.suffix = '%Y-%m-%d'
+    
+    formatter = logging.Formatter('[%(asctime)s] %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+    handler.setFormatter(formatter)
+    
+    logger.addHandler(handler)
+    
+    return logger
+
+logger = setup_logging()
+
 def log(msg):
-    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    log_msg = f"[{timestamp}] {msg}"
-    print(log_msg, flush=True)
-    with open(LOG_FILE, 'a') as f:
-        f.write(log_msg + '\n')
+    print(msg, flush=True)
+    logger.info(msg)
 
 def send_notification(title, message):
     subprocess.run(['notify-send', title, message], capture_output=True)
