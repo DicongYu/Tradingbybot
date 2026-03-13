@@ -130,7 +130,7 @@ def setup_logging():
         LOG_FILE,
         when='midnight',
         interval=1,
-        backupCount=30,
+        backupCount=9999,
         encoding='utf-8'
     )
     handler.suffix = '%Y-%m-%d'
