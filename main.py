@@ -104,7 +104,7 @@ class AlertManager:
             parts.append(f"Gas: {gas_val:.1f} Gwei ({gas_status})")
         if btc:
             parts.append(f"BTC: ${btc.get('market_price', 0):,.0f}")
-            parts.append(f"Tx: {btc.get('tx_count', 0):,.0f}")
+            parts.append(f"交易: {btc.get('tx_count', 0):,.0f}")
         if txs.get('btc'):
             buy_count = sum(1 for tx in txs['btc'] if tx.get('direction') == '买入')
             sell_count = sum(1 for tx in txs['btc'] if tx.get('direction') == '卖出')
