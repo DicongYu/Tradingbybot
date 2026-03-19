@@ -106,7 +106,17 @@ class AlertManager:
             parts.append(f"BTC: ${btc.get('market_price', 0):,.0f}")
             parts.append(f"Tx: {btc.get('tx_count', 0):,.0f}")
         if txs.get('btc'):
-            parts.append(f"大额: {len(txs['btc'])}笔")
+            buy_count = sum(1 for tx in txs['btc'] if tx.get('direction') == '买入')
+            sell_count = sum(1 for tx in txs['btc'] if tx.get('direction') == '卖出')
+            unknown_count = len(txs['btc']) - buy_count - sell_count
+            direction_info = []
+            if buy_count > 0:
+                direction_info.append(f"↑买入{buy_count}")
+            if sell_count > 0:
+                direction_info.append(f"↓卖出{sell_count}")
+            if unknown_count > 0:
+                direction_info.append(f"?未知{unknown_count}")
+            parts.append(f"大额: {len(txs['btc'])}笔 ({' '.join(direction_info)})")
         
         return " | ".join(parts) if parts else "数据获取中..."
     
