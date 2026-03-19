@@ -87,15 +87,54 @@ def get_large_transfers():
         for tx in data.get('txs', [])[:30]:
             total_out = sum(out.get('value', 0) for out in tx.get('out', []))
             if total_out > LARGE_TX_THRESHOLD * 1e8:
+                direction = analyze_btc_direction(tx)
                 result['btc'].append({
                     'hash': tx['hash'],
                     'amount': total_out / 1e8,
-                    'fee': tx.get('fee', 0) / 1e8
+                    'fee': tx.get('fee', 0) / 1e8,
+                    'direction': direction,
+                    'inputs': len(tx.get('inputs', [])),
+                    'outputs': len(tx.get('out', []))
                 })
     except Exception as e:
         log(f"BTC large tx error: {e}")
     
     return result
+
+def analyze_btc_direction(tx):
+    """分析BTC交易方向"""
+    known_exchange_prefixes = {
+        '1Kraken', '1Coinbase', '1Bittrex', '1Bitfinex', '1Bitstamp',
+        '3A', '3B', '3C', '3D', '3E', '3F', '3L', '3M', 'bc1qb', 'bc1qc',
+        '1ML', '1ND', '1AX', '1AY', '1AZ', '1Bx', '1By', '1Bz',
+        '3AnX', '3AnY', '3AnZ', '3K', '3L', '3M'
+    }
+    
+    inputs = tx.get('inputs', [])
+    outputs = tx.get('out', [])
+    
+    input_addresses = []
+    for inp in inputs:
+        prev_out = inp.get('prev_out', {})
+        addr = prev_out.get('addr', '')
+        if addr:
+            input_addresses.append(addr)
+    
+    output_addresses = []
+    for out in outputs:
+        addr = out.get('addr', '')
+        if addr:
+            output_addresses.append(addr)
+    
+    exchange_in_count = sum(1 for addr in output_addresses if any(addr.startswith(p) for p in known_exchange_prefixes))
+    exchange_out_count = sum(1 for addr in input_addresses if any(addr.startswith(p) for p in known_exchange_prefixes))
+    
+    if exchange_in_count > 0:
+        return "买入"
+    elif exchange_out_count > 0:
+        return "卖出"
+    else:
+        return "未知"
 
 def get_all_onchain_data(force_refresh=False):
     global cached_data
@@ -131,7 +170,17 @@ def get_onchain_summary():
     if btc:
         summary.append(f"BTC: ${btc.get('market_price', 0):,.0f}")
     if txs.get('btc'):
-        summary.append(f"BTC大额: {len(txs['btc'])}笔")
+        buy_count = sum(1 for tx in txs['btc'] if tx.get('direction') == '买入')
+        sell_count = sum(1 for tx in txs['btc'] if tx.get('direction') == '卖出')
+        unknown_count = len(txs['btc']) - buy_count - sell_count
+        direction_info = []
+        if buy_count > 0:
+            direction_info.append(f"↑买入{buy_count}")
+        if sell_count > 0:
+            direction_info.append(f"↓卖出{sell_count}")
+        if unknown_count > 0:
+            direction_info.append(f"?未知{unknown_count}")
+        summary.append(f"BTC大额: {len(txs['btc'])}笔 ({' '.join(direction_info)})")
     
     return " | ".join(summary) if summary else "数据获取中..."
 
@@ -182,7 +231,9 @@ def run_monitor():
             if large_txs.get('btc'):
                 log(f"BTC 大额转账: {len(large_txs['btc'])} 笔")
                 for tx in large_txs['btc'][:3]:
-                    log(f"  📌 {tx['amount']:.2f} BTC")
+                    direction = tx.get('direction', '未知')
+                    direction_emoji = "📈" if direction == "买入" else "📉" if direction == "卖出" else "❓"
+                    log(f"  {direction_emoji} {tx['amount']:.2f} BTC ({direction})")
             
             if counter % NOTIFY_INTERVAL == 0:
                 summary = get_onchain_summary()
